@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리 아이 감정 연결 놀이</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Gaegu', cursive;
+            background-color: #f0f9ff;
+            touch-action: manipulation;
+        }
+        .card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: scale(1.05);
+        }
+        .drop-zone {
+            border: 3px dashed #cbd5e1;
+            transition: all 0.3s;
+        }
+        .drop-zone.drag-over {
+            background-color: #e2e8f0;
+            border-color: #94a3b8;
+            transform: scale(1.02);
+        }
+        .matched {
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .success-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-6 border-8 border-yellow-200">
+        <!-- 헤더 -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl text-blue-500 font-bold mb-2">알쏭달쏭 내 마음!</h1>
+            <p class="text-xl text-gray-600">표정 그림을 마음 글자에 가져와 주세요</p>
+        </header>
+
+        <div class="grid grid-cols-2 gap-8">
+            <!-- 표정 카드 영역 -->
+            <div id="emoji-container" class="space-y-4">
+                <h2 class="text-2xl text-center font-bold text-pink-400 mb-4">어떤 표정일까?</h2>
+                <!-- 카드는 JS에서 생성됨 -->
+            </div>
+
+            <!-- 단어 카드 영역 -->
+            <div id="word-container" class="space-y-4">
+                <h2 class="text-2xl text-center font-bold text-green-400 mb-4">어떤 마음일까?</h2>
+                <!-- 카드는 JS에서 생성됨 -->
+            </div>
+        </div>
+
+        <!-- 다시 하기 버튼 -->
+        <div class="mt-12 text-center">
+            <button onclick="initGame()" class="bg-yellow-400 hover:bg-yellow-500 text-white text-2xl font-bold py-3 px-8 rounded-full shadow-lg transition-all">
+                처음부터 다시 하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 성공 화면 -->
+    <div id="success-screen" class="success-overlay animate__animated animate__fadeIn">
+        <div class="text-8xl mb-4">🌟</div>
+        <h2 class="text-6xl text-blue-500 font-bold mb-4">참 잘했어요!</h2>
+        <p class="text-2xl text-gray-700 mb-8">우리 친구 마음 박사님이군요!</p>
+        <button onclick="initGame()" class="bg-blue-500 text-white text-3xl font-bold py-4 px-12 rounded-full shadow-2xl">
+            한 번 더 놀기
+        </button>
+    </div>
+
+    <script>
+        const emotions = [
+            { id: 1, name: '기뻐요', emoji: '😊', color: 'bg-yellow-100', borderColor: 'border-yellow-400', sound: '기뻐요!' },
+            { id: 2, name: '슬퍼요', emoji: '😢', color: 'bg-blue-100', borderColor: 'border-blue-400', sound: '슬퍼요...' },
+            { id: 3, name: '화나요', emoji: '😡', color: 'bg-red-100', borderColor: 'border-red-400', sound: '화나요!' },
+            { id: 4, name: '무서워요', emoji: '😨', color: 'bg-purple-100', borderColor: 'border-purple-400', sound: '무서워요~' },
+            { id: 5, name: '놀랐어요', emoji: '😮', color: 'bg-orange-100', borderColor: 'border-orange-400', sound: '놀랐어요!' },
+            { id: 6, name: '부끄러워요', emoji: '😳', color: 'bg-pink-100', borderColor: 'border-pink-400', sound: '부끄러워요' }
+        ];
+
+        let draggedId = null;
+        let matchesCount = 0;
+
+        // 음성 읽어주기 함수
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ko-KR';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function initGame() {
+            matchesCount = 0;
+            document.getElementById('success-screen').style.display = 'none';
+            const emojiContainer = document.getElementById('emoji-container');
+            const wordContainer = document.getElementById('word-container');
+            
+            emojiContainer.innerHTML = '<h2 class="text-2xl text-center font-bold text-pink-400 mb-4">어떤 표정일까?</h2>';
+            wordContainer.innerHTML = '<h2 class="text-2xl text-center font-bold text-green-400 mb-4">어떤 마음일까?</h2>';
+
+            // 랜덤 섞기
+            const shuffledEmotions = [...emotions].sort(() => Math.random() - 0.5);
+            const shuffledWords = [...emotions].sort(() => Math.random() - 0.5);
+
+            // 표정 카드 생성
+            shuffledEmotions.forEach(emo => {
+                const card = document.createElement('div');
+                card.className = `card ${emo.color} border-4 ${emo.borderColor} rounded-2xl p-4 flex flex-col items-center justify-center animate__animated animate__bounceIn`;
+                card.draggable = true;
+                card.innerHTML = `<span class="text-6xl mb-2">${emo.emoji}</span>`;
+                
+                card.addEventListener('dragstart', () => {
+                    draggedId = emo.id;
+                    card.classList.add('opacity-50');
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('opacity-50');
+                });
+
+                // 터치 이벤트 대응 (모바일/태블릿)
+                card.addEventListener('click', () => {
+                    speak(emo.sound);
+                });
+
+                emojiContainer.appendChild(card);
+                emo.element = card;
+            });
+
+            // 단어 카드 생성 (드롭 존)
+            shuffledWords.forEach(emo => {
+                const zone = document.createElement('div');
+                zone.className = `drop-zone bg-gray-50 border-4 border-dashed rounded-2xl p-6 text-center animate__animated animate__fadeInRight`;
+                zone.innerHTML = `<span class="text-3xl font-bold text-gray-700">${emo.name}</span>`;
+
+                zone.addEventListener('dragover', (e) => e.preventDefault());
+                zone.addEventListener('dragenter', () => zone.classList.add('drag-over'));
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+
+                zone.addEventListener('drop', () => {
+                    zone.classList.remove('drag-over');
+                    if (draggedId === emo.id) {
+                        // 정답 처리
+                        zone.className = `card ${emo.color} border-4 ${emo.borderColor} rounded-2xl p-6 text-center animate__animated animate__tada`;
+                        zone.innerHTML = `<div class="flex flex-col items-center">
+                            <span class="text-4xl mb-1">${emo.emoji}</span>
+                            <span class="text-2xl font-bold text-gray-800">${emo.name}</span>
+                        </div>`;
+                        
+                        // 원래 표정 카드 숨기기
+                        const originalEmoji = emotions.find(e => e.id === draggedId).element;
+                        originalEmoji.classList.add('matched');
+                        
+                        speak(emo.name + "! 정답이에요!");
+                        matchesCount++;
+                        checkWin();
+                    } else {
+                        // 오답 처리
+                        zone.classList.add('animate__animated', 'animate__headShake');
+                        setTimeout(() => zone.classList.remove('animate__animated', 'animate__headShake'), 500);
+                        speak("다시 한번 생각해볼까요?");
+                    }
+                });
+
+                wordContainer.appendChild(zone);
+            });
+        }
+
+        function checkWin() {
+            if (matchesCount === emotions.length) {
+                setTimeout(() => {
+                    document.getElementById('success-screen').style.display = 'flex';
+                    speak("우와! 모든 감정을 다 찾았어요! 정말 멋져요!");
+                }, 1000);
+            }
+        }
+
+        // 초기 실행
+        window.onload = initGame;
+    </script>
+</body>
+</html>
