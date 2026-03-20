@@ -193,7 +193,7 @@
                 activities: [
                     { text: '표정 카드 맞추기', emoji: '🎭', link: './01/index.html' },
                     { text: '내 마음 색깔로 칠하기', emoji: '🖍️' },
-                    { text: '친구를 꼭 안아주기', emoji: '🫂' }
+                    { text: '친구를 꼭 안아주기', emoji: '🫂', link: './01/index.html' }
                 ],
                 color: 'text-amber-600'
             },
@@ -232,11 +232,9 @@
             
             let activityHtml = data.activities.map((act, idx) => `
                 <div class="activity-item">
-                    <!-- 정확히 이 네모 박스를 눌렀을 때만 체크됨 -->
                     <div class="checkbox-target ${completionStatus[topic][idx] ? 'checked' : ''}" 
                          onclick="toggleCheck(event, '${topic}', ${idx})">
                     </div>
-                    <!-- 글자나 이모지 영역을 누르면 이동 또는 아무 일도 안 함 -->
                     <div class="content-target" onclick="handleContentClick('${act.link || ''}')">
                         <span class="activity-emoji">${act.emoji}</span>
                         <span class="text-2xl activity-text ${completionStatus[topic][idx] ? 'strikethrough' : ''}">${act.text}</span>
@@ -257,7 +255,6 @@
             document.body.style.overflow = 'hidden';
         }
 
-        // 체크박스 클릭 핸들러
         function toggleCheck(event, topic, index) {
             event.stopPropagation();
             const target = event.currentTarget;
@@ -282,7 +279,6 @@
             checkAllCompleted(topic);
         }
 
-        // 텍스트/아이콘 영역 클릭 핸들러
         function handleContentClick(link) {
             if (link) {
                 window.location.href = link;
