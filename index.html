@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나와 가족 - 우리들의 이야기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Gaegu', cursive;
+            background-color: #FFF9E6;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .theme-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .theme-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .bubble {
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+            position: absolute;
+            z-index: -1;
+            animation: float 6s infinite ease-in-out;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal.active { display: flex; }
+        .title-text { font-family: 'Nanum Pen Script', cursive; }
+
+        /* 활동 아이템 컨테이너 */
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+        
+        /* 네모 박스(체크박스 전용 타겟) */
+        .checkbox-target {
+            width: 38px;
+            height: 38px;
+            border: 3px solid #e5e7eb;
+            border-radius: 8px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: white;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .checkbox-target.checked {
+            background: #FB923C;
+            border-color: #FB923C;
+            transform: scale(1.1);
+        }
+        .checkbox-target.checked::after {
+            content: '⭐';
+            font-size: 18px;
+        }
+        
+        /* 텍스트 및 이모지 영역 (클릭 시 이동 기능용) */
+        .content-target {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .strikethrough {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+        .stamp {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            transform: rotate(-15deg) scale(0);
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0.9;
+            pointer-events: none;
+            filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.1));
+        }
+        .stamp.visible { transform: rotate(-15deg) scale(1); }
+        
+        .activity-emoji {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="bubble w-32 h-32 top-10 left-10" style="animation-delay: 0s;"></div>
+    <div class="bubble w-20 h-20 bottom-20 right-10" style="animation-delay: 2s;"></div>
+    <div class="bubble w-40 h-40 top-1/2 right-20" style="animation-delay: 1s;"></div>
+
+    <header class="text-center mb-12 animate__animated animate__fadeInDown">
+        <h1 class="text-5xl md:text-7xl text-orange-500 title-text mb-4">소중한 나와 우리 가족</h1>
+        <p class="text-2xl text-gray-600">친구들! 활동을 마친 뒤 네모 박스(⬜)를 정확히 눌러볼까요?</p>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
+        <!-- 주제 카드들 -->
+        <div class="theme-card bg-rose-100 p-8 rounded-3xl border-4 border-rose-200 relative overflow-hidden" onclick="openModal('body')">
+            <div id="stamp-body" class="stamp text-7xl">💮</div>
+            <div class="text-6xl mb-4 text-center">🏃‍♂️</div>
+            <h2 class="text-4xl text-rose-600 text-center font-bold mb-4">나의 몸</h2>
+            <p class="text-xl text-rose-800 text-center">우리 몸의 이름을 알아보고,<br>건강하게 지키는 방법을 배워요.</p>
+        </div>
+
+        <div class="theme-card bg-amber-100 p-8 rounded-3xl border-4 border-amber-200 relative overflow-hidden" onclick="openModal('emotion')">
+            <div id="stamp-emotion" class="stamp text-7xl">💮</div>
+            <div class="text-6xl mb-4 text-center">😊</div>
+            <h2 class="text-4xl text-amber-600 text-center font-bold mb-4">나의 감정</h2>
+            <p class="text-xl text-amber-800 text-center">내 마음속에는 어떤 기분들이<br>살고 있을까요?</p>
+        </div>
+
+        <div class="theme-card bg-emerald-100 p-8 rounded-3xl border-4 border-emerald-200 relative overflow-hidden" onclick="openModal('family')">
+            <div id="stamp-family" class="stamp text-7xl">💮</div>
+            <div class="text-6xl mb-4 text-center">👨‍👩‍👧‍👦</div>
+            <h2 class="text-4xl text-emerald-600 text-center font-bold mb-4">우리 가족</h2>
+            <p class="text-xl text-emerald-800 text-center">서로 닮은 구석도 많고 사랑도 듬뿍 나누는<br>행복한 우리 가족!</p>
+        </div>
+
+        <div class="theme-card bg-indigo-100 p-8 rounded-3xl border-4 border-indigo-200 relative overflow-hidden" onclick="openModal('precious')">
+            <div id="stamp-precious" class="stamp text-7xl">💮</div>
+            <div class="text-6xl mb-4 text-center">✨</div>
+            <h2 class="text-4xl text-indigo-600 text-center font-bold mb-4">나의 소중함</h2>
+            <p class="text-xl text-indigo-800 text-center">나는 이 세상에 단 한 명뿐인<br>정말 특별하고 소중한 어린이에요.</p>
+        </div>
+    </main>
+
+    <footer class="mt-16 text-center text-gray-500 pb-10">
+        <p class="text-xl">❤️ 우리 12명의 친구들 모두 최고예요 ❤️</p>
+    </footer>
+
+    <!-- 상세 보기 모달 -->
+    <div id="modal" class="modal" onclick="closeModal()">
+        <div class="bg-white p-8 rounded-3xl max-w-2xl w-full shadow-2xl relative animate__animated animate__zoomIn" onclick="event.stopPropagation()">
+            <button class="absolute top-4 right-4 text-4xl text-gray-400 hover:text-gray-600" onclick="closeModal()">&times;</button>
+            <div id="modal-content" class="text-center"></div>
+            <div class="mt-8 text-center">
+                <button class="bg-orange-400 text-white px-10 py-3 rounded-full text-2xl hover:bg-orange-500 transition-transform active:scale-95 shadow-lg" onclick="closeModal()">
+                    다 했어요!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const contentData = {
+            body: {
+                title: '나의 몸 이야기',
+                icon: '🏃‍♂️',
+                activities: [
+                    { text: '거울 보고 내 얼굴 관찰하기', emoji: '🪞' },
+                    { text: '심장 소리 들어보기', emoji: '💓' },
+                    { text: '내 몸 그림 그리기', emoji: '🎨' }
+                ],
+                color: 'text-rose-600'
+            },
+            emotion: {
+                title: '마음 신호등',
+                icon: '🌈',
+                activities: [
+                    { text: '표정 카드 맞추기', emoji: '🎭', link: './01/index.html' },
+                    { text: '내 마음 색깔로 칠하기', emoji: '🖍️' },
+                    { text: '친구를 꼭 안아주기', emoji: '🫂' }
+                ],
+                color: 'text-amber-600'
+            },
+            family: {
+                title: '사랑 가득 우리 집',
+                icon: '🏠',
+                activities: [
+                    { text: '가족 얼굴 그리기', emoji: '👩‍👩‍👧‍👦' },
+                    { text: '가족 이름 말해보기', emoji: '🗣️' },
+                    { text: '심부름 도와드리기', emoji: '🧺' }
+                ],
+                color: 'text-emerald-600'
+            },
+            precious: {
+                title: '나는 특별해!',
+                icon: '👑',
+                activities: [
+                    { text: '내가 잘하는 것 뽐내기', emoji: '🌟' },
+                    { text: '어른이 된 내 모습 상상하기', emoji: '🚀' },
+                    { text: '나를 향해 "사랑해" 말하기', emoji: '🤟' }
+                ],
+                color: 'text-indigo-600'
+            }
+        };
+
+        let completionStatus = {
+            body: [false, false, false],
+            emotion: [false, false, false],
+            family: [false, false, false],
+            precious: [false, false, false]
+        };
+
+        function openModal(topic) {
+            const data = contentData[topic];
+            const content = document.getElementById('modal-content');
+            
+            let activityHtml = data.activities.map((act, idx) => `
+                <div class="activity-item">
+                    <!-- 정확히 이 네모 박스를 눌렀을 때만 체크됨 -->
+                    <div class="checkbox-target ${completionStatus[topic][idx] ? 'checked' : ''}" 
+                         onclick="toggleCheck(event, '${topic}', ${idx})">
+                    </div>
+                    <!-- 글자나 이모지 영역을 누르면 이동 또는 아무 일도 안 함 -->
+                    <div class="content-target" onclick="handleContentClick('${act.link || ''}')">
+                        <span class="activity-emoji">${act.emoji}</span>
+                        <span class="text-2xl activity-text ${completionStatus[topic][idx] ? 'strikethrough' : ''}">${act.text}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            content.innerHTML = `
+                <div class="text-8xl mb-4 animate__animated animate__bounceIn">${data.icon}</div>
+                <h3 class="text-4xl font-bold mb-6 ${data.color}">${data.title}</h3>
+                <div class="text-left bg-orange-50 p-6 rounded-2xl border-2 border-orange-100 shadow-inner">
+                    <p class="text-xl font-bold mb-4 text-orange-500 font-sans">활동을 마친 뒤 네모 박스(⬜)를 눌러요!</p>
+                    <div class="flex flex-col">${activityHtml}</div>
+                </div>
+            `;
+            
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 체크박스 클릭 핸들러
+        function toggleCheck(event, topic, index) {
+            event.stopPropagation();
+            const target = event.currentTarget;
+            const textElement = target.nextElementSibling.querySelector('.activity-text');
+            
+            completionStatus[topic][index] = !completionStatus[topic][index];
+            
+            if (completionStatus[topic][index]) {
+                target.classList.add('checked');
+                textElement.classList.add('strikethrough');
+                confetti({
+                    particleCount: 40,
+                    spread: 60,
+                    origin: { y: 0.7 },
+                    colors: ['#FFD700', '#FF6347', '#00CED1']
+                });
+            } else {
+                target.classList.remove('checked');
+                textElement.classList.remove('strikethrough');
+            }
+
+            checkAllCompleted(topic);
+        }
+
+        // 텍스트/아이콘 영역 클릭 핸들러
+        function handleContentClick(link) {
+            if (link) {
+                window.location.href = link;
+            }
+        }
+
+        function checkAllCompleted(topic) {
+            const isAllDone = completionStatus[topic].every(status => status === true);
+            const stamp = document.getElementById(`stamp-${topic}`);
+            
+            if (isAllDone) {
+                stamp.classList.add('visible');
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 150,
+                        spread: 100,
+                        origin: { y: 0.5 },
+                        scalar: 1.2
+                    });
+                }, 300);
+            } else {
+                stamp.classList.remove('visible');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+</body>
+</html>
